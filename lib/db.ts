@@ -171,19 +171,6 @@ export async function getRequestLogStats(userId: string): Promise<{
   }
 }
 
-export async function getRequestLogCount(userId: string): Promise<number> {
-  const client = await pool.connect();
-  try {
-    const result = await client.query(
-      `SELECT COUNT(*) as count FROM request_logs WHERE user_id = $1`,
-      [userId]
-    );
-    return parseInt(result.rows[0].count || "0");
-  } finally {
-    client.release();
-  }
-}
-
 // Error Details functions
 export interface ErrorDetailRow {
   id: number;

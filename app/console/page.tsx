@@ -145,14 +145,34 @@ export default function ConsolePage() {
     }
   }, []);
 
-  const fetchLogs = useCallback(async (page = 1) => {
+  const fetchLogs = useCallback(async (page = 1, forceRefreshStats = false) => {
     setLogsLoading(true);
     const startTime = Date.now();
     try {
-      const res = await fetch(`/api/logs?page=${page}&limit=20`);
+      // 首次加载、第1页、或强制刷新时获取统计数据
+      const needStats = forceRefreshStats || !logsData?.stats || page === 1;
+      const url = needStats
+        ? `/api/logs?page=${page}&limit=20&withStats=true`
+        : `/api/logs?page=${page}&limit=20`;
+
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
-        setLogsData(data);
+
+        if (needStats) {
+          // 带统计数据的响应
+          setLogsData(data);
+        } else {
+          // 只更新日志列表，保留原有统计数据和 total
+          setLogsData(prev => prev ? {
+            ...prev,
+            logs: data.logs,
+            pagination: {
+              ...data.pagination,
+              total: prev.pagination.total,
+            },
+          } : data);
+        }
         setLogsPage(page);
       }
     } catch (error) {
@@ -165,7 +185,7 @@ export default function ConsolePage() {
       }
       setLogsLoading(false);
     }
-  }, []);
+  }, [logsData?.stats]);
 
   const fetchLogDetail = useCallback(async (logId: string) => {
     setDetailLoading(true);
@@ -183,23 +203,23 @@ export default function ConsolePage() {
     }
   }, []);
 
-  // Fetch logs when switching to logs tab
+  // Fetch logs when switching to logs tab (only on tab switch, not on page change)
   useEffect(() => {
-    if (activeTab === "logs" && session) {
-      fetchLogs(logsPage);
+    if (activeTab === "logs" && session && !logsData) {
+      fetchLogs(1);  // 首次进入 logs tab 时加载第一页
     }
-  }, [activeTab, session, fetchLogs, logsPage]);
+  }, [activeTab, session, logsData, fetchLogs]);
 
   // Auto-refresh logs
   useEffect(() => {
     if (!autoRefresh || activeTab !== "logs") return;
 
     const intervalId = setInterval(() => {
-      fetchLogs(logsPage);
+      fetchLogs(1, true);  // 自动刷新回到第1页并获取统计
     }, 5000);
 
     return () => clearInterval(intervalId);
-  }, [autoRefresh, activeTab, logsPage, fetchLogs]);
+  }, [autoRefresh, activeTab, fetchLogs]);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -668,7 +688,7 @@ export default function ConsolePage() {
                         <Button
                           variant="glass"
                           size="sm"
-                          onClick={() => fetchLogs(logsPage)}
+                          onClick={() => fetchLogs(1, true)}
                           disabled={logsLoading}
                         >
                           <RefreshCw className={cn("w-4 h-4", logsLoading && "animate-spin")} />

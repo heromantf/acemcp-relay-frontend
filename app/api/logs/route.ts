@@ -4,7 +4,6 @@ import { auth } from "@/lib/auth";
 import {
   getRequestLogs,
   getRequestLogStats,
-  getRequestLogCount,
 } from "@/lib/db";
 
 export async function GET(request: Request) {
@@ -21,15 +20,39 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = (page - 1) * limit;
+    const withStats = searchParams.get("withStats") === "true";
 
-    const [logs, stats, total] = await Promise.all([
-      getRequestLogs(session.user.id, limit, offset),
-      getRequestLogStats(session.user.id),
-      getRequestLogCount(session.user.id),
-    ]);
+    // 翻页时只查日志列表，首次加载时才查统计
+    if (withStats) {
+      const [logs, stats] = await Promise.all([
+        getRequestLogs(session.user.id, limit, offset),
+        getRequestLogStats(session.user.id),
+      ]);
+
+      return NextResponse.json({
+        stats,
+        logs: logs.map((log) => ({
+          id: log.id,
+          status: log.status,
+          statusCode: log.status_code,
+          requestPath: log.request_path,
+          requestMethod: log.request_method,
+          requestTimestamp: log.request_timestamp,
+          responseDurationMs: log.response_duration_ms,
+          clientIp: log.client_ip,
+        })),
+        pagination: {
+          page,
+          limit,
+          total: stats.totalCount,
+        },
+      });
+    }
+
+    // 翻页时只查日志列表
+    const logs = await getRequestLogs(session.user.id, limit, offset);
 
     return NextResponse.json({
-      stats,
       logs: logs.map((log) => ({
         id: log.id,
         status: log.status,
@@ -43,7 +66,6 @@ export async function GET(request: Request) {
       pagination: {
         page,
         limit,
-        total,
       },
     });
   } catch (error) {
