@@ -8,6 +8,29 @@ import { Trophy, Crown, Medal, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+// 获取最近三天的日期选项（使用 Asia/Shanghai 时区）
+function getDateOptions() {
+  const options: { date: string; label: string }[] = [];
+  const now = new Date();
+
+  for (let i = 0; i < 3; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    // 完整日期字符串用于 API 调用 (YYYY-MM-DD)
+    const dateStr = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "Asia/Shanghai",
+    }).format(d);
+    // 显示标签使用 M/D 格式（如 1/15）
+    const label = new Intl.DateTimeFormat("zh-CN", {
+      timeZone: "Asia/Shanghai",
+      month: "numeric",
+      day: "numeric",
+    }).format(d);
+    options.push({ date: dateStr, label });
+  }
+  return options;
+}
+
 interface LeaderboardEntry {
   rank: number;
   userName: string;
@@ -25,6 +48,9 @@ export default function LeaderboardPage() {
   const router = useRouter();
   const [data, setData] = useState<LeaderboardData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>("");
+
+  const dateOptions = getDateOptions();
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -32,10 +58,13 @@ export default function LeaderboardPage() {
     }
   }, [isPending, session, router]);
 
-  const fetchLeaderboard = useCallback(async () => {
+  const fetchLeaderboard = useCallback(async (dateStr?: string) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/leaderboard");
+      const url = dateStr
+        ? `/api/leaderboard?date=${dateStr}`
+        : "/api/leaderboard";
+      const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
         setData(json);
@@ -48,10 +77,17 @@ export default function LeaderboardPage() {
   }, []);
 
   useEffect(() => {
-    if (session) {
-      fetchLeaderboard();
+    if (session && !selectedDate) {
+      const todayDate = dateOptions[0].date;
+      setSelectedDate(todayDate);
+      fetchLeaderboard(todayDate);
     }
-  }, [session, fetchLeaderboard]);
+  }, [session, selectedDate, dateOptions, fetchLeaderboard]);
+
+  const handleDateChange = (date: string) => {
+    setSelectedDate(date);
+    fetchLeaderboard(date);
+  };
 
   if (isPending) {
     return (
@@ -104,7 +140,7 @@ export default function LeaderboardPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={fetchLeaderboard}
+              onClick={() => fetchLeaderboard(selectedDate)}
               disabled={loading}
               className="text-slate-400 hover:text-white"
             >
@@ -119,9 +155,27 @@ export default function LeaderboardPage() {
         <div className="text-center mb-8">
           <Trophy className="w-12 h-12 text-amber-400 mx-auto mb-4" />
           <h1 className="text-2xl font-semibold text-white mb-2">每日排行榜</h1>
-          <p className="text-slate-400 text-sm">
-            {data?.date || "加载中..."} · 每半小时更新
-          </p>
+          <p className="text-slate-400 text-sm mb-4">每半小时更新</p>
+
+          {/* 日期选择器 - Segment 风格 */}
+          <div className="flex justify-center">
+            <div className="inline-flex rounded-lg bg-white/[0.04] border border-white/[0.06] p-1">
+              {dateOptions.map((option) => (
+                <button
+                  key={option.date}
+                  onClick={() => handleDateChange(option.date)}
+                  className={cn(
+                    "px-4 py-1.5 text-sm rounded-md transition-all",
+                    selectedDate === option.date
+                      ? "bg-cyan-500/20 text-cyan-400"
+                      : "text-slate-400 hover:text-slate-200"
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Leaderboard entries */}
@@ -135,7 +189,7 @@ export default function LeaderboardPage() {
             ))
           ) : data?.entries.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
-              今日暂无排行数据
+              暂无排行数据
             </div>
           ) : (
             data?.entries.map((entry) => (
