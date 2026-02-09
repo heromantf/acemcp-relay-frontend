@@ -3,11 +3,11 @@ import crypto from "crypto";
 import { createClient, RedisClientType } from "redis";
 
 const pool = new Pool({
-  host: "localhost",
-  port: 5432,
-  user: "postgres",
-  password: "19970412",
-  database: "postgres",
+  host: process.env.POSTGRES_HOST || "localhost",
+  port: parseInt(process.env.POSTGRES_PORT || "5432"),
+  user: process.env.POSTGRES_USER || "postgres",
+  password: process.env.POSTGRES_PASSWORD || "",
+  database: process.env.POSTGRES_DB || "postgres",
 });
 
 export default pool;
@@ -17,8 +17,9 @@ let redisClient: RedisClientType | null = null;
 
 async function getRedisClient(): Promise<RedisClientType> {
   if (!redisClient) {
+    const host = process.env.REDIS_HOST || "localhost";
     const port = process.env.REDIS_PORT || "6379";
-    redisClient = createClient({ url: `redis://localhost:${port}` });
+    redisClient = createClient({ url: `redis://${host}:${port}` });
     redisClient.on("error", (err) => console.error("Redis error:", err));
     await redisClient.connect();
   }
