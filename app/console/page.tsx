@@ -107,12 +107,12 @@ export default function ConsolePage() {
   const [logDetail, setLogDetail] = useState<LogDetailResponse | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  const installCommand = "npm install -g @augmentcode/auggie@prerelease";
+  const installCommand = "npm install -g @augmentcode/auggie@latest";
   const mcpConfig = `{
   "mcpServers": {
     "augment-context-engine": {
       "command": "auggie",
-      "args": ["--mcp"],
+      "args": ["--mcp", "--mcp-auto-workspace"],
       "env": {
         "AUGMENT_API_TOKEN": "your-access-token",
         "AUGMENT_API_URL": "https://acemcp.heroman.wtf/relay/"
@@ -575,6 +575,8 @@ export default function ConsolePage() {
                                   <span className="text-slate-500">:</span>
                                   <span className="text-slate-500">{" ["}</span>
                                   <span className="text-emerald-400">&quot;--mcp&quot;</span>
+                                  <span className="text-slate-500">,</span>
+                                  <span className="text-emerald-400">{" \"--mcp-auto-workspace\""}</span>
                                   <span className="text-slate-500">{"]"}</span>
                                   <span className="text-slate-500">,</span>{"\n"}
                                   <span className="text-slate-300">{"      "}</span>
