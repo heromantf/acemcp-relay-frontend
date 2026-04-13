@@ -115,8 +115,7 @@ export default function ConsolePage() {
       "command": "auggie",
       "args": ["--mcp", "--mcp-auto-workspace"],
       "env": {
-        "AUGMENT_API_TOKEN": "your-access-token",
-        "AUGMENT_API_URL": "https://acemcp.heroman.wtf/relay/"
+        "AUGMENT_SESSION_AUTH": "{\\"accessToken\\":\\"your-access-token\\",\\"tenantURL\\":\\"https://acemcp.heroman.wtf/relay/\\",\\"scopes\\":[\\"email\\"]}"
       }
     }
   }
@@ -591,14 +590,9 @@ export default function ConsolePage() {
                                   <span className="text-slate-500">:</span>
                                   <span className="text-slate-500">{" {"}</span>{"\n"}
                                   <span className="text-slate-300">{"        "}</span>
-                                  <span className="text-cyan-400">&quot;AUGMENT_API_TOKEN&quot;</span>
+                                  <span className="text-cyan-400">&quot;AUGMENT_SESSION_AUTH&quot;</span>
                                   <span className="text-slate-500">:</span>
-                                  <span className="text-amber-400">{" \"your-access-token\""}</span>
-                                  <span className="text-slate-500">,</span>{"\n"}
-                                  <span className="text-slate-300">{"        "}</span>
-                                  <span className="text-cyan-400">&quot;AUGMENT_API_URL&quot;</span>
-                                  <span className="text-slate-500">:</span>
-                                  <span className="text-emerald-400">{" \"https://acemcp.heroman.wtf/relay/\""}</span>{"\n"}
+                                  <span className="text-amber-400">{" \"{\\\"accessToken\\\":\\\"your-access-token\\\",\\\"tenantURL\\\":\\\"https://acemcp.heroman.wtf/relay/\\\",\\\"scopes\\\":[\\\"email\\\"]}\""}</span>{"\n"}
                                   <span className="text-slate-300">{"      "}</span>
                                   <span className="text-slate-500">{"}"}</span>{"\n"}
                                   <span className="text-slate-300">{"    "}</span>
@@ -626,15 +620,37 @@ export default function ConsolePage() {
                           {/* Configuration notes */}
                           <div className="mt-5 space-y-3">
                             <div className="flex gap-3 p-3 bg-[#0a0f1a]/80 border border-white/[0.04] rounded-lg">
-                              <code className="text-cyan-400 text-xs font-mono shrink-0">AUGMENT_API_TOKEN</code>
+                              <code className="text-cyan-400 text-xs font-mono shrink-0">AUGMENT_SESSION_AUTH</code>
                               <p className="text-slate-400 text-xs">
-                                你的 API 密钥，在「密钥管理」中生成
+                                JSON 格式的认证信息，包含以下字段：
                               </p>
                             </div>
-                            <div className="flex gap-3 p-3 bg-[#0a0f1a]/80 border border-white/[0.04] rounded-lg">
-                              <code className="text-cyan-400 text-xs font-mono shrink-0">AUGMENT_API_URL</code>
-                              <p className="text-slate-400 text-xs">
-                                固定为 <code className="text-emerald-400">https://acemcp.heroman.wtf/relay/</code>
+                            <div className="ml-4 space-y-2">
+                              <div className="flex gap-3 p-2.5 bg-[#0a0f1a]/80 border border-white/[0.04] rounded-lg">
+                                <code className="text-amber-400 text-xs font-mono shrink-0">accessToken</code>
+                                <p className="text-slate-400 text-xs">
+                                  你的 API 密钥，在「密钥管理」中生成
+                                </p>
+                              </div>
+                              <div className="flex gap-3 p-2.5 bg-[#0a0f1a]/80 border border-white/[0.04] rounded-lg">
+                                <code className="text-amber-400 text-xs font-mono shrink-0">tenantURL</code>
+                                <p className="text-slate-400 text-xs">
+                                  固定为 <code className="text-emerald-400">https://acemcp.heroman.wtf/relay/</code>
+                                </p>
+                              </div>
+                              <div className="flex gap-3 p-2.5 bg-[#0a0f1a]/80 border border-white/[0.04] rounded-lg">
+                                <code className="text-amber-400 text-xs font-mono shrink-0">scopes</code>
+                                <p className="text-slate-400 text-xs">
+                                  固定为 <code className="text-emerald-400">[&quot;email&quot;]</code>
+                                </p>
+                              </div>
+                            </div>
+                            <div className="p-3 bg-yellow-500/[0.06] border border-yellow-500/20 rounded-lg space-y-2">
+                              <p className="text-yellow-400/80 text-xs">
+                                旧版 auggie（&lt;=0.19.0）使用的 <code className="font-mono">AUGMENT_API_TOKEN</code> 和 <code className="font-mono">AUGMENT_API_URL</code> 已废弃，建议升级到最新版使用 <code className="font-mono">AUGMENT_SESSION_AUTH</code>。
+                              </p>
+                              <p className="text-yellow-400/60 text-xs">
+                                如需使用旧版，请将 env 替换为：<code className="font-mono text-yellow-400/80">&quot;AUGMENT_API_TOKEN&quot;: &quot;your-access-token&quot;</code>，<code className="font-mono text-yellow-400/80">&quot;AUGMENT_API_URL&quot;: &quot;https://acemcp.heroman.wtf/relay/&quot;</code>
                               </p>
                             </div>
                           </div>
