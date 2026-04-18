@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Copy, Eye, EyeOff, RefreshCw, Info, LogOut, Loader2 } from "lucide-react";
+import { Copy, Eye, EyeOff, RefreshCw, Info, LogOut, Loader2, Github } from "lucide-react";
 
 // shadcn/ui components
 import { Button } from "@/components/ui/button";
@@ -76,7 +76,19 @@ interface UserInfo {
   email: string;
   image: string;
   trustLevel: number;
+  githubCreatedAt: string | null;
   createdAt: string;
+}
+
+type AuthProvider = "github" | "linuxdo";
+
+function detectProvider(user: UserInfo): AuthProvider {
+  return user.githubCreatedAt ? "github" : "linuxdo";
+}
+
+function formatGithubAccountAge(createdAt: string): string {
+  const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000);
+  return `${days} 天`;
 }
 
 interface KeyInfo {
@@ -810,32 +822,49 @@ export default function ConsolePage() {
                     <h2 className="text-lg font-medium text-white mb-6">用户信息</h2>
 
                     {userInfo ? (
-                      <div className="space-y-6">
-                        {/* Avatar and name */}
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-16 w-16 border border-white/10">
-                            <AvatarImage src={userInfo.image} alt={userInfo.name || "avatar"} />
-                            <AvatarFallback className="bg-slate-800 text-slate-300">
-                              {userInfo.name?.charAt(0)?.toUpperCase() || "U"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-white font-medium text-lg">{userInfo.name}</p>
-                            <p className="text-slate-500 text-sm">@{userInfo.username}</p>
-                          </div>
-                        </div>
+                      (() => {
+                        const provider = detectProvider(userInfo);
+                        return (
+                          <div className="space-y-6">
+                            {/* Avatar and name */}
+                            <div className="flex items-center gap-4">
+                              <Avatar className="h-16 w-16 border border-white/10">
+                                <AvatarImage src={userInfo.image} alt={userInfo.name || "avatar"} />
+                                <AvatarFallback className="bg-slate-800 text-slate-300">
+                                  {userInfo.name?.charAt(0)?.toUpperCase() || "U"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="text-white font-medium text-lg truncate">{userInfo.name}</p>
+                                  <ProviderBadge provider={provider} />
+                                </div>
+                                {userInfo.username && (
+                                  <p className="text-slate-500 text-sm">@{userInfo.username}</p>
+                                )}
+                              </div>
+                            </div>
 
-                        {/* Info grid */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <InfoItem label="邮箱" value={userInfo.email || "-"} copyable />
-                          <InfoItem label="用户 ID" value={userInfo.id} copyable />
-                          <InfoItem label="信任等级" value={`Level ${userInfo.trustLevel || 0}`} />
-                          <InfoItem
-                            label="注册时间"
-                            value={userInfo.createdAt ? new Date(userInfo.createdAt).toLocaleDateString("zh-CN") : "-"}
-                          />
-                        </div>
-                      </div>
+                            {/* Info grid */}
+                            <div className="grid grid-cols-2 gap-4">
+                              <InfoItem label="邮箱" value={userInfo.email || "-"} copyable />
+                              <InfoItem label="用户 ID" value={userInfo.id} copyable />
+                              {provider === "github" ? (
+                                <InfoItem
+                                  label="GitHub 账号年龄"
+                                  value={userInfo.githubCreatedAt ? formatGithubAccountAge(userInfo.githubCreatedAt) : "-"}
+                                />
+                              ) : (
+                                <InfoItem label="信任等级" value={`Level ${userInfo.trustLevel || 0}`} />
+                              )}
+                              <InfoItem
+                                label="注册时间"
+                                value={userInfo.createdAt ? new Date(userInfo.createdAt).toLocaleDateString("zh-CN") : "-"}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })()
                     ) : (
                       <div className="space-y-4">
                         <div className="flex items-center gap-4">
@@ -997,6 +1026,27 @@ export default function ConsolePage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+function ProviderBadge({ provider }: { provider: AuthProvider }) {
+  if (provider === "github") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.12] text-slate-200 text-[10px] font-medium">
+        <Github className="w-3 h-3" />
+        GitHub
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/[0.08] border border-amber-500/30 text-amber-300 text-[10px] font-medium">
+      <span className="w-3 h-3 rounded-full overflow-hidden border border-white/20 flex flex-col">
+        <span className="flex-[1] bg-[#2d2d2d]" />
+        <span className="flex-[1.5] bg-[#f5f5f5]" />
+        <span className="flex-[1] bg-[#f0a030]" />
+      </span>
+      LinuxDo
+    </span>
   );
 }
 

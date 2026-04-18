@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { genericOAuth } from "better-auth/plugins";
 import { Pool } from "pg";
 
@@ -22,6 +23,49 @@ export const auth = betterAuth({
       username: {
         type: "string",
         required: false,
+      },
+      githubCreatedAt: {
+        type: "date",
+        required: false,
+        input: false,
+      },
+    },
+  },
+  socialProviders: {
+    github: {
+      clientId: process.env.AUTH_GITHUB_ID!,
+      clientSecret: process.env.AUTH_GITHUB_SECRET!,
+      mapProfileToUser: (profile) => ({
+        name: profile.name || profile.login,
+        email: profile.email,
+        image: profile.avatar_url,
+        username: profile.login,
+        githubCreatedAt: profile.created_at ? new Date(profile.created_at) : undefined,
+      }),
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          const created = (user as { githubCreatedAt?: Date | string | null })
+            .githubCreatedAt;
+          if (!created) return;
+          const createdMs = new Date(created).getTime();
+          if (Number.isNaN(createdMs)) {
+            throw new APIError("BAD_REQUEST", {
+              message: "GITHUB_ACCOUNT_TOO_YOUNG:unknown:unknown",
+            });
+          }
+          const raw = Number(process.env.AUTH_GITHUB_MIN_ACCOUNT_AGE_DAYS);
+          const minDays = Number.isFinite(raw) && raw >= 0 ? raw : 365;
+          const ageDays = Math.floor((Date.now() - createdMs) / 86_400_000);
+          if (ageDays < minDays) {
+            throw new APIError("BAD_REQUEST", {
+              message: `GITHUB_ACCOUNT_TOO_YOUNG:${minDays}:${ageDays}`,
+            });
+          }
+        },
       },
     },
   },

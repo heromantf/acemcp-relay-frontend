@@ -21,6 +21,7 @@ export async function GET() {
       image: user.image,
       username: (user as { username?: string }).username,
       trustLevel: (user as { trustLevel?: number }).trustLevel,
+      githubCreatedAt: (user as { githubCreatedAt?: string | Date | null }).githubCreatedAt,
       createdAt: user.createdAt,
     });
   } catch (error) {

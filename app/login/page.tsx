@@ -2,14 +2,40 @@
 
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, ArrowLeft } from "lucide-react";
+import { ChevronRight, ArrowLeft, Github, AlertCircle } from "lucide-react";
 
-export default function LoginPage() {
-  const handleLogin = () => {
+function parseAuthError(raw: string | null): string | null {
+  if (!raw) return null;
+  if (raw.startsWith("GITHUB_ACCOUNT_TOO_YOUNG:")) {
+    const [, required, actual] = raw.split(":");
+    if (actual === "unknown") {
+      return "登录失败：无法确认该 GitHub 账号的注册时间";
+    }
+    return `登录失败：GitHub 账号需至少注册 ${required} 天（当前账号仅 ${actual} 天）`;
+  }
+  return "登录失败，请稍后重试";
+}
+
+function LoginContent() {
+  const params = useSearchParams();
+  const errorMessage = parseAuthError(params.get("error"));
+
+  const handleLinuxDoLogin = () => {
     authClient.signIn.oauth2({
       providerId: "linuxdo",
       callbackURL: "/",
+      errorCallbackURL: "/login",
+    });
+  };
+
+  const handleGithubLogin = () => {
+    authClient.signIn.social({
+      provider: "github",
+      callbackURL: "/",
+      errorCallbackURL: "/login",
     });
   };
 
@@ -54,25 +80,48 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* SSO Button */}
-          <Button
-            onClick={handleLogin}
-            variant="glass"
-            size="lg"
-            className="w-full justify-center py-3.5 rounded-xl opacity-0 animate-float-up animate-delay-300 group"
-          >
-            {/* LinuxDo icon */}
-            <div className="w-5 h-5 rounded-full overflow-hidden border border-white/20 flex flex-col">
-              <div className="flex-[1] bg-[#2d2d2d]" />
-              <div className="flex-[1.5] bg-[#f5f5f5]" />
-              <div className="flex-[1] bg-[#f0a030]" />
+          {errorMessage && (
+            <div
+              role="alert"
+              className="mb-5 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs text-red-200"
+            >
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-300" />
+              <span className="font-light leading-relaxed">{errorMessage}</span>
             </div>
-            <span className="font-light">使用 LinuxDo 登录</span>
-            <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition-all duration-200 group-hover:translate-x-0.5" />
-          </Button>
+          )}
+
+          {/* SSO Buttons */}
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={handleLinuxDoLogin}
+              variant="glass"
+              size="lg"
+              className="w-full justify-center py-3.5 rounded-xl opacity-0 animate-float-up animate-delay-300 group"
+            >
+              {/* LinuxDo icon */}
+              <div className="w-5 h-5 rounded-full overflow-hidden border border-white/20 flex flex-col">
+                <div className="flex-[1] bg-[#2d2d2d]" />
+                <div className="flex-[1.5] bg-[#f5f5f5]" />
+                <div className="flex-[1] bg-[#f0a030]" />
+              </div>
+              <span className="font-light">使用 LinuxDo 登录</span>
+              <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition-all duration-200 group-hover:translate-x-0.5" />
+            </Button>
+
+            <Button
+              onClick={handleGithubLogin}
+              variant="glass"
+              size="lg"
+              className="w-full justify-center py-3.5 rounded-xl opacity-0 animate-float-up animate-delay-400 group"
+            >
+              <Github className="w-5 h-5 text-slate-200" />
+              <span className="font-light">使用 GitHub 登录</span>
+              <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition-all duration-200 group-hover:translate-x-0.5" />
+            </Button>
+          </div>
 
           {/* Hint text */}
-          <p className="text-center text-slate-600 text-xs mt-4 opacity-0 animate-float-up animate-delay-400">
+          <p className="text-center text-slate-600 text-xs mt-4 opacity-0 animate-float-up animate-delay-500">
             首次登录将自动创建账户
           </p>
         </div>
@@ -92,5 +141,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   );
 }
